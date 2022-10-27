@@ -2,7 +2,7 @@
 name = "xlmr_colbert"
 version = "1.0.0"
 description = ""
-authors = [""]
+authors = ["JHU Human Language Technology Center of Excellence"]
 packages = [
   { include = "xlmr_colbert" }
 ]
