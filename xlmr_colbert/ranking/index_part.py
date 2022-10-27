@@ -23,8 +23,14 @@ class IndexPart():
         # Load doclens metadata
         all_doclens = load_doclens(directory, flatten=False)
 
-        self.doc_offset = sum([len(part_doclens) for part_doclens in all_doclens[:first_part]])
-        self.doc_endpos = sum([len(part_doclens) for part_doclens in all_doclens[:last_part]])
+        self.doc_offset = sum(
+            len(part_doclens) for part_doclens in all_doclens[:first_part]
+        )
+
+        self.doc_endpos = sum(
+            len(part_doclens) for part_doclens in all_doclens[:last_part]
+        )
+
         self.pids_range = range(self.doc_offset, self.doc_endpos)
 
         self.parts_doclens = all_doclens[first_part:last_part]
@@ -64,9 +70,7 @@ class IndexPart():
         assert all(pid in self.pids_range for pid in pids), self.pids_range
 
         pids_ = [pid - self.doc_offset for pid in pids]
-        scores = self.ranker.rank(Q, pids_)
-
-        return scores
+        return self.ranker.rank(Q, pids_)
 
     def batch_rank(self, all_query_embeddings, query_indexes, pids, sorted_pids):
         """
@@ -77,6 +81,6 @@ class IndexPart():
         assert ((pids >= self.pids_range.start) & (pids < self.pids_range.stop)).sum() == pids.size(0)
 
         pids_ = pids - self.doc_offset
-        scores = self.ranker.batch_rank(all_query_embeddings, query_indexes, pids_, sorted_pids)
-
-        return scores
+        return self.ranker.batch_rank(
+            all_query_embeddings, query_indexes, pids_, sorted_pids
+        )

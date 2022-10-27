@@ -32,8 +32,12 @@ def main():
             args.partitions = 1 << math.ceil(math.log2(8 * math.sqrt(num_embeddings)))
             print('\n\n')
             Run.warn("You did not specify --partitions!")
-            Run.warn("Default computation chooses", args.partitions,
-                     "partitions (for {} embeddings)".format(num_embeddings))
+            Run.warn(
+                "Default computation chooses",
+                args.partitions,
+                f"partitions (for {num_embeddings} embeddings)",
+            )
+
             print('\n\n')
 
         index_faiss(args)

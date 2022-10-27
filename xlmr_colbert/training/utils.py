@@ -24,5 +24,5 @@ def manage_checkpoints(args, colbert, optimizer, batch_idx):
         save_checkpoint(name, 0, batch_idx, colbert, optimizer, arguments)
 
     if batch_idx in SAVED_CHECKPOINTS:
-        name = os.path.join(path, "colbert-{}.dnn".format(batch_idx))
+        name = os.path.join(path, f"colbert-{batch_idx}.dnn")
         save_checkpoint(name, 0, batch_idx, colbert, optimizer, arguments)

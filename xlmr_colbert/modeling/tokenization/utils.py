@@ -44,8 +44,7 @@ def _sort_by_length(ids, mask, bsize):
 
 
 def _split_into_batches(ids, mask, bsize):
-    batches = []
-    for offset in range(0, ids.size(0), bsize):
-        batches.append((ids[offset:offset+bsize], mask[offset:offset+bsize]))
-
-    return batches
+    return [
+        (ids[offset : offset + bsize], mask[offset : offset + bsize])
+        for offset in range(0, ids.size(0), bsize)
+    ]

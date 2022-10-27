@@ -21,13 +21,13 @@ class Metrics:
         assert query_key not in self.results
         assert len(self.results) <= query_idx
         assert len(set(gold_positives)) == len(gold_positives)
-        assert len(set([pid for _, pid, _ in ranking])) == len(ranking)
+        assert len({pid for _, pid, _ in ranking}) == len(ranking)
 
         self.results[query_key] = ranking
 
         positives = [i for i, (_, pid, _) in enumerate(ranking) if pid in gold_positives]
 
-        if len(positives) == 0:
+        if not positives:
             return
 
         for depth in self.mrr_sums:
@@ -44,13 +44,13 @@ class Metrics:
 
     def print_metrics(self, query_idx):
         for depth in sorted(self.mrr_sums):
-            print("MRR@" + str(depth), "=", self.mrr_sums[depth] / (query_idx+1.0))
+            print(f"MRR@{str(depth)}", "=", self.mrr_sums[depth] / (query_idx+1.0))
 
         for depth in sorted(self.success_sums):
-            print("Success@" + str(depth), "=", self.success_sums[depth] / (query_idx+1.0))
+            print(f"Success@{str(depth)}", "=", self.success_sums[depth] / (query_idx+1.0))
 
         for depth in sorted(self.recall_sums):
-            print("Recall@" + str(depth), "=", self.recall_sums[depth] / (query_idx+1.0))
+            print(f"Recall@{str(depth)}", "=", self.recall_sums[depth] / (query_idx+1.0))
 
     def log(self, query_idx):
         assert query_idx >= self.max_query_idx
@@ -61,15 +61,15 @@ class Metrics:
 
         for depth in sorted(self.mrr_sums):
             score = self.mrr_sums[depth] / (query_idx+1.0)
-            Run.log_metric("ranking/MRR." + str(depth), score, query_idx)
+            Run.log_metric(f"ranking/MRR.{str(depth)}", score, query_idx)
 
         for depth in sorted(self.success_sums):
             score = self.success_sums[depth] / (query_idx+1.0)
-            Run.log_metric("ranking/Success." + str(depth), score, query_idx)
+            Run.log_metric(f"ranking/Success.{str(depth)}", score, query_idx)
 
         for depth in sorted(self.recall_sums):
             score = self.recall_sums[depth] / (query_idx+1.0)
-            Run.log_metric("ranking/Recall." + str(depth), score, query_idx)
+            Run.log_metric(f"ranking/Recall.{str(depth)}", score, query_idx)
 
     def output_final_metrics(self, path, query_idx, num_queries):
         assert query_idx + 1 == num_queries

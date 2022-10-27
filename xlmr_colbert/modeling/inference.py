@@ -62,11 +62,11 @@ class ModelInference():
 
             #print("batch_ids len=%d" % len(batch_ids))
             #print("reverse_indices.shape=" + str(reverse_indices.shape))
-            
+
             batches = [self.doc(input_ids, attention_mask, keep_dims=keep_dims, to_cpu=to_cpu)
                        for input_ids, attention_mask in batch_ids]
             #print("batches len = %d " % len(batches))
-            
+
             if keep_dims:
                 D = _stack_3D_tensors(batches)
                 if with_ids:
@@ -127,8 +127,8 @@ class ModelInference():
 
 
 def _stack_3D_tensors(groups):
-    bsize = sum([x.size(0) for x in groups])
-    maxlen = max([x.size(1) for x in groups])
+    bsize = sum(x.size(0) for x in groups)
+    maxlen = max(x.size(1) for x in groups)
     hdim = groups[0].size(2)
 
     output = torch.zeros(bsize, maxlen, hdim, device=groups[0].device, dtype=groups[0].dtype)

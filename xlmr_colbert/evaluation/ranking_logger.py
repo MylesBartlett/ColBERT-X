@@ -20,11 +20,11 @@ class RankingLogger():
         filename = os.path.join(self.directory, filename)
         self.filename, self.also_save_annotations = filename, also_save_annotations
 
-        print_message("#> Logging ranked lists to {}".format(self.filename))
+        print_message(f"#> Logging ranked lists to {self.filename}")
 
         with open(filename, 'w') as f:
             self.f = f
-            with (open(filename + '.annotated', 'w') if also_save_annotations else NullContextManager()) as g:
+            with open(f'{filename}.annotated', 'w') if also_save_annotations else NullContextManager() as g:
                 self.g = g
                 try:
                     yield self
@@ -48,9 +48,8 @@ class RankingLogger():
                 g_buffer.append('\t'.join([str(x) for x in [qid, pid, rank, is_relevant]]) + "\n")
 
             if rank in print_positions:
-                prefix = "** " if is_relevant else ""
-                prefix += str(rank)
-                print("#> ( QID {} ) ".format(qid) + prefix + ") ", pid, ":", score, '    ', passage)
+                prefix = ("** " if is_relevant else "") + str(rank)
+                print(f"#> ( QID {qid} ) {prefix}) ", pid, ":", score, '    ', passage)
 
         self.f.write(''.join(f_buffer))
         if self.g:

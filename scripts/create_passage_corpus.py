@@ -16,22 +16,21 @@ def strip_newlines(text: str) -> str:
     return text
 
 def process_documents(args) -> Dict[str, str]:
-    num_docs = sum(1 for line in open(args.corpus))
+    num_docs = sum(1 for _ in open(args.corpus))
     with open(args.corpus) as f:
         for line in tqdm(f, total=num_docs):
             temp = json.loads(line)
             doc_id = temp[args.docid]
-            title = strip_newlines(temp[args.title]) 
+            title = strip_newlines(temp[args.title])
             text = strip_newlines(temp[args.body])
-            doc_text = title + " " + text if title else text
+            doc_text = f"{title} {text}" if title else text
             if args.lower:
                 doc_text = doc_text.lower()
             encoded_tokens = args.tokenizer.encode(doc_text)[1:-1]
             s, e, idx = 0, 0, 0
             while s < len(encoded_tokens):
                 e = s + args.length
-                if e >= len(encoded_tokens):
-                    e = len(encoded_tokens)
+                e = min(e, len(encoded_tokens))
                 p = args.tokenizer.decode(encoded_tokens[s:e])
                 pass_id = f"{doc_id}_{idx}"
                 s = s + args.length - args.stride

@@ -48,7 +48,7 @@ class QueryTokenizer():
         assert type(batch_text) in [list, tuple], (type(batch_text))
 
         # add placehold for the [Q] marker
-        batch_text = ['. ' + x for x in batch_text]
+        batch_text = [f'. {x}' for x in batch_text]
 
         obj = self.tok(batch_text, padding='max_length', truncation=True,
                        return_tensors='pt', max_length=self.query_maxlen)
@@ -59,8 +59,4 @@ class QueryTokenizer():
         ids[:, 1] = self.Q_marker_token_id
         ids[ids == 1] = self.mask_token_id
 
-        if bsize:
-            batches = _split_into_batches(ids, mask, bsize)
-            return batches
-
-        return ids, mask
+        return _split_into_batches(ids, mask, bsize) if bsize else (ids, mask)

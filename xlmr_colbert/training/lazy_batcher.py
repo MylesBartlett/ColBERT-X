@@ -63,7 +63,7 @@ class LazyBatcher():
                 pid, passage, title, *_ = line.strip().split('\t')
                 assert pid == 'id' or int(pid) == line_idx
 
-                passage = title + ' | ' + passage
+                passage = f'{title} | {passage}'
                 collection.append(passage)
 
         return collection

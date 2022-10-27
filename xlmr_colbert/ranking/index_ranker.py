@@ -44,14 +44,20 @@ class IndexRanker():
         return views
 
     def _create_buffers(self, max_bsize, dtype, devices):
-        buffers = {}
-
-        for device in devices:
-            buffers[device] = [torch.zeros(max_bsize, stride, self.dim, dtype=dtype,
-                                           device=device, pin_memory=(device == 'cpu'))
-                               for stride in self.strides]
-
-        return buffers
+        return {
+            device: [
+                torch.zeros(
+                    max_bsize,
+                    stride,
+                    self.dim,
+                    dtype=dtype,
+                    device=device,
+                    pin_memory=(device == 'cpu'),
+                )
+                for stride in self.strides
+            ]
+            for device in devices
+        }
 
     def rank(self, Q, pids, views=None, shift=0):
         assert len(pids) > 0
@@ -145,7 +151,7 @@ class IndexRanker():
 
             for batch_idx, offset in enumerate(range(0, len(pids), BSIZE)):
                 if batch_idx % 100 == 0:
-                    print_message("#> Processing batch #{}..".format(batch_idx))
+                    print_message(f"#> Processing batch #{batch_idx}..")
 
                 endpos = offset + BSIZE
                 batch_query_index, batch_pids = query_indexes[offset:endpos], pids[offset:endpos]

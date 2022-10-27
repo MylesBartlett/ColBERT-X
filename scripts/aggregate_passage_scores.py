@@ -24,7 +24,7 @@ if __name__ == "__main__":
             for line in fin:
                 map_id, qry_id = line.strip().split("\t")
                 qry_map_dict[map_id] = qry_id
-    
+
     rank_dict = defaultdict(list)
     with open(args.rank_file) as f:
         for line in f:    
@@ -49,7 +49,7 @@ if __name__ == "__main__":
                 if rank==cutoff: break
                 rank += 1
 
-                
+
 
     fname = os.path.join(args.root, f"{args.prefix}_ranking.trec")
     with open(fname, "w") as f:

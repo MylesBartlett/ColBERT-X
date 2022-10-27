@@ -22,11 +22,11 @@ class ColBERT(RobertaPreTrainedModel):
         self.mask_punctuation = mask_punctuation
         self.skiplist = {}
 
-	
+
         self.tokenizer = XLMRobertaTokenizer.from_pretrained('xlm-roberta-large')
         self.tokenizer.add_tokens(['[unused1]'])
         self.tokenizer.add_tokens(['[unused2]'])
-        
+
         self.roberta = XLMRobertaModel(config)
         #self.roberta.resize_token_embeddings(len(self.tokenizer)) 
 
@@ -68,5 +68,7 @@ class ColBERT(RobertaPreTrainedModel):
         return (-1.0 * ((Q.unsqueeze(2) - D.unsqueeze(1))**2).sum(-1)).max(-1).values.sum(-1)
 
     def mask(self, input_ids):
-        mask = [[(x not in self.skiplist) and (x != 1) for x in d] for d in input_ids.cpu().tolist()]
-        return mask
+        return [
+            [(x not in self.skiplist) and (x != 1) for x in d]
+            for d in input_ids.cpu().tolist()
+        ]

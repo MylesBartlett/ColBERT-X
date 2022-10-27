@@ -101,7 +101,7 @@ class CollectionEncoder():
 
             L = [line for _, line in zip(range(batch_size), fi)]
 
-            if len(L) == 0:
+            if not L:
                 break  # EOF
 
             yield (offset, L, owner)
@@ -128,7 +128,7 @@ class CollectionEncoder():
 
             if len(other) >= 1:
                 title, *_ = other
-                passage = title + ' | ' + passage
+                passage = f'{title} | {passage}'
 
             batch.append(passage)
 
@@ -151,10 +151,10 @@ class CollectionEncoder():
     def _save_batch(self, batch_idx, embs, offset, doclens, ids):
         start_time = time.time()
 
-        output_path = os.path.join(self.args.index_path, "{}.pt".format(batch_idx))
-        output_path_ids = os.path.join(self.args.index_path, "{}.tokenids".format(batch_idx))
-        output_sample_path = os.path.join(self.args.index_path, "{}.sample".format(batch_idx))
-        doclens_path = os.path.join(self.args.index_path, 'doclens.{}.json'.format(batch_idx))
+        output_path = os.path.join(self.args.index_path, f"{batch_idx}.pt")
+        output_path_ids = os.path.join(self.args.index_path, f"{batch_idx}.tokenids")
+        output_sample_path = os.path.join(self.args.index_path, f"{batch_idx}.sample")
+        doclens_path = os.path.join(self.args.index_path, f'doclens.{batch_idx}.json')
 
         # Save the embeddings.
         self.indexmgr.save(embs, output_path)
@@ -166,11 +166,15 @@ class CollectionEncoder():
             ujson.dump(doclens, output_doclens)
 
         throughput = compute_throughput(len(doclens), start_time, time.time())
-        self.print_main("#> Saved batch #{} to {} \t\t".format(batch_idx, output_path),
-                        "Saving Throughput =", throughput, "passages per minute.\n")
+        self.print_main(
+            f"#> Saved batch #{batch_idx} to {output_path} \t\t",
+            "Saving Throughput =",
+            throughput,
+            "passages per minute.\n",
+        )
 
     def print(self, *args):
-        print_message("[" + str(self.process_idx) + "]", "\t\t", *args)
+        print_message(f"[{str(self.process_idx)}]", "\t\t", *args)
 
     def print_main(self, *args):
         if self.process_idx == 0:
@@ -183,8 +187,8 @@ def compute_throughput(size, t0, t1):
     if throughput > 1000 * 1000:
         throughput = throughput / (1000*1000)
         throughput = round(throughput, 1)
-        return '{}M'.format(throughput)
+        return f'{throughput}M'
 
     throughput = throughput / (1000)
     throughput = round(throughput, 1)
-    return '{}k'.format(throughput)
+    return f'{throughput}k'

@@ -92,7 +92,7 @@ class Logger():
             output_metadata.write(msg + '\n\n\n')
 
     def info_all(self, *args):
-        print_message('[' + str(self.rank) + ']', '\t', *args)
+        print_message(f'[{str(self.rank)}]', '\t', *args)
 
     def info(self, *args):
         if self.is_main:

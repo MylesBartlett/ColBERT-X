@@ -26,7 +26,7 @@ def main():
     parser.add_argument('--batch', dest='batch', default=False, action='store_true')
     parser.add_argument('--depth', dest='depth', default=1000, type=int)
     parser.add_argument('--log_scores', dest='log_scores', default=False, action='store_true')
-    
+
     args = parser.parse()
 
     args.depth = args.depth if args.depth > 0 else None

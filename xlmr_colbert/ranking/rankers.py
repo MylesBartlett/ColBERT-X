@@ -21,9 +21,9 @@ class Ranker():
     def encode(self, queries):
         assert type(queries) in [list, tuple], type(queries)
 
-        Q = self.inference.queryFromText(queries, bsize=512 if len(queries) > 512 else None)
-
-        return Q
+        return self.inference.queryFromText(
+            queries, bsize=512 if len(queries) > 512 else None
+        )
 
     def rank(self, Q, pids=None):
         pids = self.retrieve(Q, verbose=False)[0] if pids is None else pids

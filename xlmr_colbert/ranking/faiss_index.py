@@ -85,7 +85,7 @@ class FaissIndex():
         for offset in range(0, Q_faiss.size(0), faiss_bsize):
             endpos = min(offset + faiss_bsize, Q_faiss.size(0))
 
-            print_message("#> Searching from {} to {}...".format(offset, endpos), condition=verbose)
+            print_message(f"#> Searching from {offset} to {endpos}...", condition=verbose)
 
             some_Q_faiss = Q_faiss[offset:endpos].float().numpy()
             _, some_embedding_ids = self.faiss_index.search(some_Q_faiss, faiss_depth)

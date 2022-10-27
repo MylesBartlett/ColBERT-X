@@ -105,7 +105,7 @@ def batch_rerank(args):
         with torch.no_grad():
             for query_index, qid in enumerate(queries):
                 if query_index % 1000 == 0:
-                    print_message("#> Logging query #{} (qid {}) now...".format(query_index, qid))
+                    print_message(f"#> Logging query #{query_index} (qid {qid}) now...")
 
                 pids = all_query_rankings[0][query_index]
                 scores = all_query_rankings[1][query_index]

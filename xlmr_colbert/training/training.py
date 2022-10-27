@@ -48,7 +48,7 @@ def train(args):
                                       mask_punctuation=args.mask_punctuation)
 
     colbert.roberta.resize_token_embeddings(len(colbert.tokenizer))
-    
+
     if args.checkpoint is not None:
         # assert args.resume_optimizer is False, "TODO: This would mean reload optimizer too."
         if not args.resume_optimizer:

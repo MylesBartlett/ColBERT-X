@@ -104,12 +104,12 @@ def load_topK_pids(topK_path, qrels):
 
             topK_pids[qid].append(pid)
 
-            assert len(rest) in [1, 2, 3]
+            assert len(rest) in {1, 2, 3}
 
             if len(rest) > 1:
                 *_, label = rest
                 label = int(label)
-                assert label in [0, 1]
+                assert label in {0, 1}
 
                 if label >= 1:
                     topK_positives[qid].append(pid)
@@ -127,7 +127,7 @@ def load_topK_pids(topK_path, qrels):
     print_message("#> max(Ks) =", max(Ks), ", avg(Ks) =", round(sum(Ks) / len(Ks), 2))
     print_message("#> Loaded the top-k per query for", len(topK_pids), "unique queries.\n")
 
-    if len(topK_positives) == 0:
+    if not topK_positives:
         topK_positives = None
     else:
         assert len(topK_pids) >= len(topK_positives)
@@ -165,7 +165,7 @@ def load_collection(collection_path):
 
             if len(rest) >= 1:
                 title = rest[0]
-                passage = title + ' | ' + passage
+                passage = f'{title} | {passage}'
 
             collection.append(passage)
 
@@ -181,14 +181,17 @@ def load_colbert(args, do_print=True):
     # I.e., not their purely (i.e., training) default values.
 
     for k in ['query_maxlen', 'doc_maxlen', 'dim', 'similarity', 'amp']:
-        if 'arguments' in checkpoint and hasattr(args, k):
-            if k in checkpoint['arguments'] and checkpoint['arguments'][k] != getattr(args, k):
-                a, b = checkpoint['arguments'][k], getattr(args, k)
-                Run.warn(f"Got checkpoint['arguments']['{k}'] != args.{k} (i.e., {a} != {b})")
+        if (
+            'arguments' in checkpoint
+            and hasattr(args, k)
+            and k in checkpoint['arguments']
+            and checkpoint['arguments'][k] != getattr(args, k)
+        ):
+            a, b = checkpoint['arguments'][k], getattr(args, k)
+            Run.warn(f"Got checkpoint['arguments']['{k}'] != args.{k} (i.e., {a} != {b})")
 
-    if 'arguments' in checkpoint:
-        if args.rank < 1:
-            print(ujson.dumps(checkpoint['arguments'], indent=4))
+    if 'arguments' in checkpoint and args.rank < 1:
+        print(ujson.dumps(checkpoint['arguments'], indent=4))
 
     if do_print:
         print('\n')
