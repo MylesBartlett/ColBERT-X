@@ -1,23 +1,21 @@
-import os
 import math
-import faiss
-import torch
-import numpy as np
-
-import threading
+import os
 import queue
+import threading
 
-from xlmr_colbert.utils.utils import print_message, grouper
-from xlmr_colbert.indexing.loaders import get_parts
-from xlmr_colbert.indexing.index_manager import load_index_part
+import torch
+
 from xlmr_colbert.indexing.faiss_index import FaissIndex
+from xlmr_colbert.indexing.index_manager import load_index_part
+from xlmr_colbert.indexing.loaders import get_parts
+from xlmr_colbert.utils.utils import grouper, print_message
 
 
 def get_faiss_index_name(args, offset=None, endpos=None):
-    partitions_info = '' if args.partitions is None else f'.{args.partitions}'
-    range_info = '' if offset is None else f'.{offset}-{endpos}'
+    partitions_info = "" if args.partitions is None else f".{args.partitions}"
+    range_info = "" if offset is None else f".{offset}-{endpos}"
 
-    return f'ivfpq{partitions_info}{range_info}.faiss'
+    return f"ivfpq{partitions_info}{range_info}.faiss"
 
 
 def load_sample(samples_paths, sample_fraction=None):
@@ -27,7 +25,9 @@ def load_sample(samples_paths, sample_fraction=None):
         print_message(f"#> Loading {filename} ...")
         part = load_index_part(filename)
         if sample_fraction:
-            part = part[torch.randint(0, high=part.size(0), size=(int(part.size(0) * sample_fraction),))]
+            part = part[
+                torch.randint(0, high=part.size(0), size=(int(part.size(0) * sample_fraction),))
+            ]
         sample.append(part)
 
     sample = torch.cat(sample).float().numpy()
@@ -62,7 +62,9 @@ def index_faiss(args):
 
     if args.sample is not None:
         assert args.sample, args.sample
-        print_message(f"#> Training with {round(args.sample * 100.0, 1)}% of *all* embeddings (provided --sample).")
+        print_message(
+            f"#> Training with {round(args.sample * 100.0, 1)}% of *all* embeddings (provided --sample)."
+        )
         samples_paths = parts_paths
 
     num_parts_per_slice = math.ceil(len(parts) / args.slices)
@@ -79,7 +81,9 @@ def index_faiss(args):
             faiss_index_name = get_faiss_index_name(args, offset=part_offset, endpos=part_endpos)
 
         output_path = os.path.join(args.index_path, faiss_index_name)
-        print_message(f"#> Processing slice #{slice_idx+1} of {args.slices} (range {part_offset}..{part_endpos}).")
+        print_message(
+            f"#> Processing slice #{slice_idx+1} of {args.slices} (range {part_offset}..{part_endpos})."
+        )
         print_message(f"#> Will write to {output_path}.")
 
         assert not os.path.exists(output_path), output_path
@@ -90,7 +94,9 @@ def index_faiss(args):
 
         def _loader_thread(thread_parts_paths):
             for filenames in grouper(thread_parts_paths, SPAN, fillvalue=None):
-                sub_collection = [load_index_part(filename) for filename in filenames if filename is not None]
+                sub_collection = [
+                    load_index_part(filename) for filename in filenames if filename is not None
+                ]
                 sub_collection = torch.cat(sub_collection)
                 sub_collection = sub_collection.float().numpy()
                 loaded_parts.put(sub_collection)

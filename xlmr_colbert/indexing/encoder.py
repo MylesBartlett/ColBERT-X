@@ -1,21 +1,20 @@
+import itertools
 import os
+import queue
+import threading
 import time
+
+import numpy as np
 import torch
 import ujson
-import numpy as np
 
-import itertools
-import threading
-import queue
-
-from xlmr_colbert.modeling.inference import ModelInference
 from xlmr_colbert.evaluation.loaders import load_colbert
+from xlmr_colbert.indexing.index_manager import IndexManager
+from xlmr_colbert.modeling.inference import ModelInference
 from xlmr_colbert.utils.utils import print_message
 
-from xlmr_colbert.indexing.index_manager import IndexManager
 
-
-class CollectionEncoder():
+class CollectionEncoder:
     def __init__(self, args, process_idx, num_processes):
         self.args = args
         self.collection = args.collection
@@ -23,9 +22,9 @@ class CollectionEncoder():
         self.num_processes = num_processes
 
         assert 0.5 <= args.chunksize <= 128.0
-        max_bytes_per_file = args.chunksize * (1024*1024*1024)
+        max_bytes_per_file = args.chunksize * (1024 * 1024 * 1024)
 
-        max_bytes_per_doc = (self.args.doc_maxlen * self.args.dim * 2.0)
+        max_bytes_per_doc = self.args.doc_maxlen * self.args.dim * 2.0
 
         # Determine subset sizes for output
         minimum_subset_size = 10_000
@@ -80,10 +79,12 @@ class CollectionEncoder():
             this_encoding_throughput = compute_throughput(len(lines), t1, t2)
             this_saving_throughput = compute_throughput(len(lines), t2, t3)
 
-            self.print(f'#> Completed batch #{batch_idx} (starting at passage #{offset}) \t\t'
-                          f'Passages/min: {overall_throughput} (overall), ',
-                          f'{this_encoding_throughput} (this encoding), ',
-                          f'{this_saving_throughput} (this saving)')
+            self.print(
+                f"#> Completed batch #{batch_idx} (starting at passage #{offset}) \t\t"
+                f"Passages/min: {overall_throughput} (overall), ",
+                f"{this_encoding_throughput} (this encoding), ",
+                f"{this_saving_throughput} (this saving)",
+            )
         self.saver_queue.put(None)
 
         self.print("#> Joining saver thread.")
@@ -120,7 +121,7 @@ class CollectionEncoder():
         batch = []
 
         for line_idx, line in zip(range(offset, endpos), lines):
-            line_parts = line.strip().split('\t')
+            line_parts = line.strip().split("\t")
 
             pid, passage, *other = line_parts
 
@@ -128,17 +129,19 @@ class CollectionEncoder():
 
             if len(other) >= 1:
                 title, *_ = other
-                passage = title + ' | ' + passage
+                passage = title + " | " + passage
 
             batch.append(passage)
 
-            assert pid == 'id' or int(pid) == line_idx
+            assert pid == "id" or int(pid) == line_idx
 
         return batch
 
     def _encode_batch(self, batch_idx, batch):
         with torch.no_grad():
-            embs, ids = self.inference.docFromText(batch, bsize=self.args.bsize, keep_dims=False, with_ids=True)
+            embs, ids = self.inference.docFromText(
+                batch, bsize=self.args.bsize, keep_dims=False, with_ids=True
+            )
             assert type(embs) is list
             assert len(embs) == len(batch)
 
@@ -154,20 +157,27 @@ class CollectionEncoder():
         output_path = os.path.join(self.args.index_path, "{}.pt".format(batch_idx))
         output_path_ids = os.path.join(self.args.index_path, "{}.tokenids".format(batch_idx))
         output_sample_path = os.path.join(self.args.index_path, "{}.sample".format(batch_idx))
-        doclens_path = os.path.join(self.args.index_path, 'doclens.{}.json'.format(batch_idx))
+        doclens_path = os.path.join(self.args.index_path, "doclens.{}.json".format(batch_idx))
 
         # Save the embeddings.
         self.indexmgr.save(embs, output_path)
         self.indexmgr.save(ids, output_path_ids)
-        self.indexmgr.save(embs[torch.randint(0, high=embs.size(0), size=(embs.size(0) // 20,))], output_sample_path)
+        self.indexmgr.save(
+            embs[torch.randint(0, high=embs.size(0), size=(embs.size(0) // 20,))],
+            output_sample_path,
+        )
 
         # Save the doclens.
-        with open(doclens_path, 'w') as output_doclens:
+        with open(doclens_path, "w") as output_doclens:
             ujson.dump(doclens, output_doclens)
 
         throughput = compute_throughput(len(doclens), start_time, time.time())
-        self.print_main("#> Saved batch #{} to {} \t\t".format(batch_idx, output_path),
-                        "Saving Throughput =", throughput, "passages per minute.\n")
+        self.print_main(
+            "#> Saved batch #{} to {} \t\t".format(batch_idx, output_path),
+            "Saving Throughput =",
+            throughput,
+            "passages per minute.\n",
+        )
 
     def print(self, *args):
         print_message("[" + str(self.process_idx) + "]", "\t\t", *args)
@@ -181,10 +191,10 @@ def compute_throughput(size, t0, t1):
     throughput = size / (t1 - t0) * 60
 
     if throughput > 1000 * 1000:
-        throughput = throughput / (1000*1000)
+        throughput = throughput / (1000 * 1000)
         throughput = round(throughput, 1)
-        return '{}M'.format(throughput)
+        return "{}M".format(throughput)
 
     throughput = throughput / (1000)
     throughput = round(throughput, 1)
-    return '{}k'.format(throughput)
+    return "{}k".format(throughput)

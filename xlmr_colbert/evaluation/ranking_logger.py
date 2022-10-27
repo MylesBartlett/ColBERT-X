@@ -1,11 +1,11 @@
+from contextlib import contextmanager
 import os
 
-from contextlib import contextmanager
-from xlmr_colbert.utils.utils import print_message, NullContextManager
 from xlmr_colbert.utils.runs import Run
+from xlmr_colbert.utils.utils import NullContextManager, print_message
 
 
-class RankingLogger():
+class RankingLogger:
     def __init__(self, directory, qrels=None, log_scores=False):
         self.directory = directory
         self.qrels = qrels
@@ -22,9 +22,13 @@ class RankingLogger():
 
         print_message("#> Logging ranked lists to {}".format(self.filename))
 
-        with open(filename, 'w') as f:
+        with open(filename, "w") as f:
             self.f = f
-            with (open(filename + '.annotated', 'w') if also_save_annotations else NullContextManager()) as g:
+            with (
+                open(filename + ".annotated", "w")
+                if also_save_annotations
+                else NullContextManager()
+            ) as g:
                 self.g = g
                 try:
                     yield self
@@ -39,19 +43,21 @@ class RankingLogger():
 
         for rank, (score, pid, passage) in enumerate(ranking):
             is_relevant = self.qrels and int(pid in self.qrels[qid])
-            rank = rank+1 if is_ranked else -1
+            rank = rank + 1 if is_ranked else -1
 
             possibly_score = [score] if self.log_scores else []
 
-            f_buffer.append('\t'.join([str(x) for x in [qid, pid, rank] + possibly_score]) + "\n")
+            f_buffer.append("\t".join([str(x) for x in [qid, pid, rank] + possibly_score]) + "\n")
             if self.g:
-                g_buffer.append('\t'.join([str(x) for x in [qid, pid, rank, is_relevant]]) + "\n")
+                g_buffer.append("\t".join([str(x) for x in [qid, pid, rank, is_relevant]]) + "\n")
 
             if rank in print_positions:
                 prefix = "** " if is_relevant else ""
                 prefix += str(rank)
-                print("#> ( QID {} ) ".format(qid) + prefix + ") ", pid, ":", score, '    ', passage)
+                print(
+                    "#> ( QID {} ) ".format(qid) + prefix + ") ", pid, ":", score, "    ", passage
+                )
 
-        self.f.write(''.join(f_buffer))
+        self.f.write("".join(f_buffer))
         if self.g:
-            self.g.write(''.join(g_buffer))
+            self.g.write("".join(g_buffer))

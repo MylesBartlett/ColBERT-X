@@ -1,15 +1,26 @@
-import string
-import torch
 import torch.nn as nn
+from transformers import (
+    RobertaPreTrainedModel,
+    XLMRobertaConfig,
+    XLMRobertaModel,
+    XLMRobertaTokenizer,
+)
 
-from transformers import RobertaPreTrainedModel, XLMRobertaConfig, XLMRobertaTokenizer, XLMRobertaModel
 from xlmr_colbert.parameters import DEVICE
 
 
 class ColBERT(RobertaPreTrainedModel):
     config_class = XLMRobertaConfig
 
-    def __init__(self, config, query_maxlen, doc_maxlen, mask_punctuation, dim=128, similarity_metric='cosine'):
+    def __init__(
+        self,
+        config,
+        query_maxlen,
+        doc_maxlen,
+        mask_punctuation,
+        dim=128,
+        similarity_metric="cosine",
+    ):
 
         super(ColBERT, self).__init__(config)
         print(config)
@@ -22,13 +33,12 @@ class ColBERT(RobertaPreTrainedModel):
         self.mask_punctuation = mask_punctuation
         self.skiplist = {}
 
-	
-        self.tokenizer = XLMRobertaTokenizer.from_pretrained('xlm-roberta-large')
-        self.tokenizer.add_tokens(['[unused1]'])
-        self.tokenizer.add_tokens(['[unused2]'])
-        
+        self.tokenizer = XLMRobertaTokenizer.from_pretrained("xlm-roberta-large")
+        self.tokenizer.add_tokens(["[unused1]"])
+        self.tokenizer.add_tokens(["[unused2]"])
+
         self.roberta = XLMRobertaModel(config)
-        #self.roberta.resize_token_embeddings(len(self.tokenizer)) 
+        # self.roberta.resize_token_embeddings(len(self.tokenizer))
 
         self.linear = nn.Linear(config.hidden_size, dim, bias=False)
 
@@ -61,12 +71,14 @@ class ColBERT(RobertaPreTrainedModel):
         return D
 
     def score(self, Q, D):
-        if self.similarity_metric == 'cosine':
+        if self.similarity_metric == "cosine":
             return (Q @ D.permute(0, 2, 1)).max(2).values.sum(1)
 
-        assert self.similarity_metric == 'l2'
-        return (-1.0 * ((Q.unsqueeze(2) - D.unsqueeze(1))**2).sum(-1)).max(-1).values.sum(-1)
+        assert self.similarity_metric == "l2"
+        return (-1.0 * ((Q.unsqueeze(2) - D.unsqueeze(1)) ** 2).sum(-1)).max(-1).values.sum(-1)
 
     def mask(self, input_ids):
-        mask = [[(x not in self.skiplist) and (x != 1) for x in d] for d in input_ids.cpu().tolist()]
+        mask = [
+            [(x not in self.skiplist) and (x != 1) for x in d] for d in input_ids.cpu().tolist()
+        ]
         return mask

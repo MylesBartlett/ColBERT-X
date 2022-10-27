@@ -1,17 +1,14 @@
-import os
-import math
-import torch
-import ujson
-import traceback
-
 from itertools import accumulate
+
+import torch
+
 from xlmr_colbert.parameters import DEVICE
-from xlmr_colbert.utils.utils import print_message, dotdict, flatten
+from xlmr_colbert.utils.utils import print_message
 
 BSIZE = 1 << 14
 
 
-class IndexRanker():
+class IndexRanker:
     def __init__(self, tensor, doclens):
         self.tensor = tensor
         self.doclens = doclens
@@ -31,7 +28,7 @@ class IndexRanker():
         print_message(f"#> Using strides {self.strides}..")
 
         self.views = self._create_views(self.tensor)
-        self.buffers = self._create_buffers(BSIZE, self.tensor.dtype, {'cpu', 'cuda:0'})
+        self.buffers = self._create_buffers(BSIZE, self.tensor.dtype, {"cpu", "cuda:0"})
 
     def _create_views(self, tensor):
         views = []
@@ -47,9 +44,17 @@ class IndexRanker():
         buffers = {}
 
         for device in devices:
-            buffers[device] = [torch.zeros(max_bsize, stride, self.dim, dtype=dtype,
-                                           device=device, pin_memory=(device == 'cpu'))
-                               for stride in self.strides]
+            buffers[device] = [
+                torch.zeros(
+                    max_bsize,
+                    stride,
+                    self.dim,
+                    dtype=dtype,
+                    device=device,
+                    pin_memory=(device == "cpu"),
+                )
+                for stride in self.strides
+            ]
 
         return buffers
 
@@ -69,25 +74,35 @@ class IndexRanker():
 
         doclens, offsets = self.doclens[pids], self.doclens_pfxsum[pids]
 
-        assignments = (doclens.unsqueeze(1) > torch.tensor(self.strides).unsqueeze(0) + 1e-6).sum(-1)
+        assignments = (doclens.unsqueeze(1) > torch.tensor(self.strides).unsqueeze(0) + 1e-6).sum(
+            -1
+        )
 
         one_to_n = torch.arange(len(raw_pids))
         output_pids, output_scores, output_permutation = [], [], []
 
         for group_idx, stride in enumerate(self.strides):
-            locator = (assignments == group_idx)
+            locator = assignments == group_idx
 
             if locator.sum() < 1e-5:
                 continue
 
-            group_pids, group_doclens, group_offsets = pids[locator], doclens[locator], offsets[locator]
+            group_pids, group_doclens, group_offsets = (
+                pids[locator],
+                doclens[locator],
+                offsets[locator],
+            )
             group_Q = Q if Q.size(0) == 1 else Q[locator]
 
             group_offsets = group_offsets.to(VIEWS_DEVICE) - shift
-            group_offsets_uniq, group_offsets_expand = torch.unique_consecutive(group_offsets, return_inverse=True)
+            group_offsets_uniq, group_offsets_expand = torch.unique_consecutive(
+                group_offsets, return_inverse=True
+            )
 
             D_size = group_offsets_uniq.size(0)
-            D = torch.index_select(views[group_idx], 0, group_offsets_uniq, out=D_buffers[group_idx][:D_size])
+            D = torch.index_select(
+                views[group_idx], 0, group_offsets_uniq, out=D_buffers[group_idx][:D_size]
+            )
             D = D.to(DEVICE)
             D = D[group_offsets_expand.to(DEVICE)].to(dtype=self.maxsim_dtype)
 
@@ -128,12 +143,16 @@ class IndexRanker():
             pids = all_pids[range_start:range_end]
             query_indexes = all_query_indexes[range_start:range_end]
 
-            print_message(f"###--> Got {len(pids)} query--passage pairs in this sub-range {(pid_offset, pid_endpos)}.")
+            print_message(
+                f"###--> Got {len(pids)} query--passage pairs in this sub-range {(pid_offset, pid_endpos)}."
+            )
 
             if len(pids) == 0:
                 continue
 
-            print_message(f"###--> Ranking in batches the pairs #{range_start} through #{range_end} in this sub-range.")
+            print_message(
+                f"###--> Ranking in batches the pairs #{range_start} through #{range_end} in this sub-range."
+            )
 
             tensor_offset = self.doclens_pfxsum[pid_offset].item()
             tensor_endpos = self.doclens_pfxsum[pid_endpos].item() + 512
@@ -158,7 +177,7 @@ class IndexRanker():
 
 
 def torch_percentile(tensor, p):
-    assert p in range(1, 100+1)
+    assert p in range(1, 100 + 1)
     assert tensor.dim() == 1
 
     return tensor.kthvalue(int(p * tensor.size(0) / 100.0)).values.item()

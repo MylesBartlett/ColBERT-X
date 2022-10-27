@@ -1,24 +1,21 @@
-import torch
-
 from transformers import XLMRobertaTokenizer
-from xlmr_colbert.modeling.tokenization.utils import _split_into_batches, _sort_by_length
 
 
-class DocTokenizer():
+class DocTokenizer:
     def __init__(self, doc_maxlen):
-        self.tok = XLMRobertaTokenizer.from_pretrained('xlm-roberta-large')
-        self.tok.add_tokens(['[unused1]'])
-        self.tok.add_tokens(['[unused2]'])
+        self.tok = XLMRobertaTokenizer.from_pretrained("xlm-roberta-large")
+        self.tok.add_tokens(["[unused1]"])
+        self.tok.add_tokens(["[unused2]"])
         self.doc_maxlen = doc_maxlen
 
-        self.D_marker_token, self.D_marker_token_id = '[D]', 250003
+        self.D_marker_token, self.D_marker_token_id = "[D]", 250003
         self.cls_token, self.cls_token_id = self.tok.cls_token, self.tok.cls_token_id
         self.sep_token, self.sep_token_id = self.tok.sep_token, self.tok.sep_token_id
 
         assert self.D_marker_token_id == 250003
 
     def tokenize(self, batch_text, add_special_tokens=False):
-        assert type(batch_text) in [list, tuple], (type(batch_text))
+        assert type(batch_text) in [list, tuple], type(batch_text)
 
         tokens = [self.tok.tokenize(x, add_special_tokens=False) for x in batch_text]
 
@@ -31,9 +28,9 @@ class DocTokenizer():
         return tokens
 
     def encode(self, batch_text, add_special_tokens=False):
-        assert type(batch_text) in [list, tuple], (type(batch_text))
+        assert type(batch_text) in [list, tuple], type(batch_text)
 
-        ids = self.tok(batch_text, add_special_tokens=False)['input_ids']
+        ids = self.tok(batch_text, add_special_tokens=False)["input_ids"]
 
         if not add_special_tokens:
             return ids
@@ -44,15 +41,20 @@ class DocTokenizer():
         return ids
 
     def tensorize(self, batch_text, bsize=None):
-        assert type(batch_text) in [list, tuple], (type(batch_text))
+        assert type(batch_text) in [list, tuple], type(batch_text)
 
         # add placehold for the [D] marker
-        batch_text = ['. ' + x for x in batch_text]
+        batch_text = [". " + x for x in batch_text]
 
-        obj = self.tok(batch_text, padding='longest', truncation='longest_first',
-                       return_tensors='pt', max_length=self.doc_maxlen)
+        obj = self.tok(
+            batch_text,
+            padding="longest",
+            truncation="longest_first",
+            return_tensors="pt",
+            max_length=self.doc_maxlen,
+        )
 
-        ids, mask = obj['input_ids'], obj['attention_mask']
+        ids, mask = obj["input_ids"], obj["attention_mask"]
 
         # postprocess for the [D] marker
         ids[:, 1] = self.D_marker_token_id

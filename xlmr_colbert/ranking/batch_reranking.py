@@ -1,20 +1,17 @@
-import os
-import time
-import torch
+from collections import defaultdict
 import queue
 import threading
 
-from collections import defaultdict
+import torch
 
-from xlmr_colbert.utils.runs import Run
-from xlmr_colbert.modeling.inference import ModelInference
 from xlmr_colbert.evaluation.ranking_logger import RankingLogger
-
-from xlmr_colbert.utils.utils import print_message, flatten, zipstar
 from xlmr_colbert.indexing.loaders import get_parts
+from xlmr_colbert.modeling.inference import ModelInference
 from xlmr_colbert.ranking.index_part import IndexPart
+from xlmr_colbert.utils.runs import Run
+from xlmr_colbert.utils.utils import flatten, print_message, zipstar
 
-#MAX_DEPTH_LOGGED = 1000  # TODO: Use args.depth
+# MAX_DEPTH_LOGGED = 1000  # TODO: Use args.depth
 
 
 def prepare_ranges(index_path, dim, step, part_range):
@@ -24,7 +21,7 @@ def prepare_ranges(index_path, dim, step, part_range):
     positions = [(offset, offset + step) for offset in range(0, len(parts), step)]
 
     if part_range is not None:
-        positions = positions[part_range.start: part_range.stop]
+        positions = positions[part_range.start : part_range.stop]
 
     loaded_parts = queue.Queue(maxsize=2)
 
@@ -33,7 +30,14 @@ def prepare_ranges(index_path, dim, step, part_range):
             index = IndexPart(index_path, dim=dim, part_range=range(offset, endpos), verbose=True)
             loaded_parts.put(index, block=True)
 
-    thread = threading.Thread(target=_loader_thread, args=(index_path, dim, positions,))
+    thread = threading.Thread(
+        target=_loader_thread,
+        args=(
+            index_path,
+            dim,
+            positions,
+        ),
+    )
     thread.start()
 
     return positions, loaded_parts, thread
@@ -43,7 +47,10 @@ def score_by_range(positions, loaded_parts, all_query_embeddings, all_query_rank
     print_message("#> Sorting by PID..")
     all_query_indexes, all_pids = zipstar(all_pids)
     sorting_pids = torch.tensor(all_pids).sort()
-    all_query_indexes, all_pids = torch.tensor(all_query_indexes)[sorting_pids.indices], sorting_pids.values
+    all_query_indexes, all_pids = (
+        torch.tensor(all_query_indexes)[sorting_pids.indices],
+        sorting_pids.values,
+    )
 
     range_start, range_end = 0, 0
 
@@ -72,7 +79,9 @@ def score_by_range(positions, loaded_parts, all_query_embeddings, all_query_rank
 
 
 def batch_rerank(args):
-    positions, loaded_parts, thread = prepare_ranges(args.index_path, args.dim, args.step, args.part_range)
+    positions, loaded_parts, thread = prepare_ranges(
+        args.index_path, args.dim, args.step, args.part_range
+    )
 
     inference = ModelInference(args.colbert, amp=args.amp)
     queries, topK_pids = args.queries, args.topK_pids
@@ -83,7 +92,9 @@ def batch_rerank(args):
         print_message(f"#> Encoding all {len(queries_in_order)} queries in batches...")
 
         all_query_embeddings = inference.queryFromText(queries_in_order, bsize=512, to_cpu=True)
-        all_query_embeddings = all_query_embeddings.to(dtype=torch.float16).permute(0, 2, 1).contiguous()
+        all_query_embeddings = (
+            all_query_embeddings.to(dtype=torch.float16).permute(0, 2, 1).contiguous()
+        )
 
     for qid in queries:
         """
@@ -91,7 +102,9 @@ def batch_rerank(args):
         """
         assert qid in topK_pids, qid
 
-    all_pids = flatten([[(query_index, pid) for pid in topK_pids[qid]] for query_index, qid in enumerate(queries)])
+    all_pids = flatten(
+        [[(query_index, pid) for pid in topK_pids[qid]] for query_index, qid in enumerate(queries)]
+    )
     all_query_rankings = [defaultdict(list), defaultdict(list)]
 
     print_message(f"#> Will process {len(all_pids)} query--document pairs in total.")
@@ -101,7 +114,7 @@ def batch_rerank(args):
 
     ranking_logger = RankingLogger(Run.path, qrels=None, log_scores=args.log_scores)
 
-    with ranking_logger.context('ranking.tsv', also_save_annotations=False) as rlogger:
+    with ranking_logger.context("ranking.tsv", also_save_annotations=False) as rlogger:
         with torch.no_grad():
             for query_index, qid in enumerate(queries):
                 if query_index % 1000 == 0:
@@ -117,15 +130,23 @@ def batch_rerank(args):
 
                 scores_topk = torch.tensor(scores).topk(K, largest=True, sorted=True)
 
-                pids, scores = torch.tensor(pids)[scores_topk.indices].tolist(), scores_topk.values.tolist()
+                pids, scores = (
+                    torch.tensor(pids)[scores_topk.indices].tolist(),
+                    scores_topk.values.tolist(),
+                )
 
                 ranking = [(score, pid, None) for pid, score in zip(pids, scores)]
                 assert len(ranking) <= args.depth, (len(ranking), args.depth)
 
-                rlogger.log(qid, ranking, is_ranked=True, print_positions=[1, 2] if query_index % 100 == 0 else [])
+                rlogger.log(
+                    qid,
+                    ranking,
+                    is_ranked=True,
+                    print_positions=[1, 2] if query_index % 100 == 0 else [],
+                )
 
-    print('\n\n')
+    print("\n\n")
     print(ranking_logger.filename)
-    print_message('#> Done.\n')
+    print_message("#> Done.\n")
 
     thread.join()

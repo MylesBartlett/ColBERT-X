@@ -25,7 +25,9 @@ def tensorize_triples(query_tokenizer, doc_tokenizer, queries, positives, negati
     negative_batches = _split_into_batches(negative_ids, negative_mask, bsize)
 
     batches = []
-    for (q_ids, q_mask), (p_ids, p_mask), (n_ids, n_mask) in zip(query_batches, positive_batches, negative_batches):
+    for (q_ids, q_mask), (p_ids, p_mask), (n_ids, n_mask) in zip(
+        query_batches, positive_batches, negative_batches
+    ):
         Q = (torch.cat((q_ids, q_ids)), torch.cat((q_mask, q_mask)))
         D = (torch.cat((p_ids, n_ids)), torch.cat((p_mask, n_mask)))
         batches.append((Q, D))
@@ -46,6 +48,6 @@ def _sort_by_length(ids, mask, bsize):
 def _split_into_batches(ids, mask, bsize):
     batches = []
     for offset in range(0, ids.size(0), bsize):
-        batches.append((ids[offset:offset+bsize], mask[offset:offset+bsize]))
+        batches.append((ids[offset : offset + bsize], mask[offset : offset + bsize]))
 
     return batches

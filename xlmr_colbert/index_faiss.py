@@ -1,21 +1,21 @@
+import math
 import os
 import random
-import math
 
-from xlmr_colbert.utils.runs import Run
-from xlmr_colbert.utils.parser import Arguments
 from xlmr_colbert.indexing.faiss import index_faiss
 from xlmr_colbert.indexing.loaders import load_doclens
+from xlmr_colbert.utils.parser import Arguments
+from xlmr_colbert.utils.runs import Run
 
 
 def main():
     random.seed(12345)
 
-    parser = Arguments(description='Faiss indexing for end-to-end retrieval with ColBERT.')
+    parser = Arguments(description="Faiss indexing for end-to-end retrieval with ColBERT.")
     parser.add_index_use_input()
 
-    parser.add_argument('--sample', dest='sample', default=None, type=float)
-    parser.add_argument('--slices', dest='slices', default=1, type=int)
+    parser.add_argument("--sample", dest="sample", default=None, type=float)
+    parser.add_argument("--slices", dest="slices", default=1, type=int)
 
     args = parser.parse()
     assert args.slices >= 1
@@ -30,11 +30,14 @@ def main():
 
         if args.partitions is None:
             args.partitions = 1 << math.ceil(math.log2(8 * math.sqrt(num_embeddings)))
-            print('\n\n')
+            print("\n\n")
             Run.warn("You did not specify --partitions!")
-            Run.warn("Default computation chooses", args.partitions,
-                     "partitions (for {} embeddings)".format(num_embeddings))
-            print('\n\n')
+            Run.warn(
+                "Default computation chooses",
+                args.partitions,
+                "partitions (for {} embeddings)".format(num_embeddings),
+            )
+            print("\n\n")
 
         index_faiss(args)
 

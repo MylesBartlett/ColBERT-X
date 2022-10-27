@@ -1,21 +1,17 @@
+from multiprocessing import Pool
 import os
-import time
-import faiss
-import random
+
 import torch
 
-from multiprocessing import Pool
-from xlmr_colbert.modeling.inference import ModelInference
-
-from xlmr_colbert.utils.utils import print_message, flatten, batch
 from xlmr_colbert.indexing.loaders import load_doclens
+from xlmr_colbert.utils.utils import flatten, print_message
 
 
-class FaissIndex():
+class FaissIndex:
     def __init__(self, index_path, faiss_index_path, nprobe, part_range=None):
         print_message("#> Loading the FAISS index from", faiss_index_path, "..")
 
-        faiss_part_range = os.path.basename(faiss_index_path).split('.')[-2].split('-')
+        faiss_part_range = os.path.basename(faiss_index_path).split(".")[-2].split("-")
 
         if len(faiss_part_range) == 2:
             faiss_part_range = range(*map(int, faiss_part_range))
@@ -36,14 +32,14 @@ class FaissIndex():
         pid_offset = 0
         if faiss_part_range is not None:
             print(f"#> Restricting all_doclens to the range {faiss_part_range}.")
-            pid_offset = len(flatten(all_doclens[:faiss_part_range.start]))
-            all_doclens = all_doclens[faiss_part_range.start:faiss_part_range.stop]
+            pid_offset = len(flatten(all_doclens[: faiss_part_range.start]))
+            all_doclens = all_doclens[faiss_part_range.start : faiss_part_range.stop]
 
         self.relative_range = None
         if self.part_range is not None:
             start = self.faiss_part_range.start if self.faiss_part_range is not None else 0
-            a = len(flatten(all_doclens[:self.part_range.start - start]))
-            b = len(flatten(all_doclens[:self.part_range.stop - start]))
+            a = len(flatten(all_doclens[: self.part_range.start - start]))
+            b = len(flatten(all_doclens[: self.part_range.stop - start]))
             self.relative_range = range(a, b)
             print(f"self.relative_range = {self.relative_range}")
 
@@ -54,7 +50,7 @@ class FaissIndex():
 
         offset_doclens = 0
         for pid, dlength in enumerate(all_doclens):
-            self.emb2pid[offset_doclens: offset_doclens + dlength] = pid_offset + pid
+            self.emb2pid[offset_doclens : offset_doclens + dlength] = pid_offset + pid
             offset_doclens += dlength
 
         print_message("len(self.emb2pid) =", len(self.emb2pid))
@@ -76,9 +72,11 @@ class FaissIndex():
         Q_faiss = Q.view(num_queries * embeddings_per_query, dim).cpu().contiguous()
 
         # Search in large batches with faiss.
-        print_message("#> Search in batches with faiss. \t\t",
-                      f"Q.size() = {Q.size()}, Q_faiss.size() = {Q_faiss.size()}",
-                      condition=verbose)
+        print_message(
+            "#> Search in batches with faiss. \t\t",
+            f"Q.size() = {Q.size()}, Q_faiss.size() = {Q_faiss.size()}",
+            condition=verbose,
+        )
 
         embeddings_ids = []
         faiss_bsize = embeddings_per_query * 5000
@@ -94,7 +92,9 @@ class FaissIndex():
         embedding_ids = torch.cat(embeddings_ids)
 
         # Reshape to (number of queries, non-unique embedding IDs per query)
-        embedding_ids = embedding_ids.view(num_queries, embeddings_per_query * embedding_ids.size(1))
+        embedding_ids = embedding_ids.view(
+            num_queries, embeddings_per_query * embedding_ids.size(1)
+        )
 
         return embedding_ids
 

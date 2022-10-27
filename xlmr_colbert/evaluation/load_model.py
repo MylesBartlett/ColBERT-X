@@ -1,23 +1,25 @@
+from collections import OrderedDict, defaultdict
 import os
-import ujson
-import torch
 import random
 
-from collections import defaultdict, OrderedDict
+import torch
+import ujson
 
-from xlmr_colbert.parameters import DEVICE
 from xlmr_colbert.modeling.colbert import ColBERT
-from xlmr_colbert.utils.utils import print_message, load_checkpoint
+from xlmr_colbert.parameters import DEVICE
+from xlmr_colbert.utils.utils import load_checkpoint, print_message
 
 
 def load_model(args, do_print=True):
-    colbert = ColBERT.from_pretrained('xlm-roberta-large',
-                                      query_maxlen=args.query_maxlen,
-                                      doc_maxlen=args.doc_maxlen,
-                                      dim=args.dim,
-                                      similarity_metric=args.similarity,
-                                      mask_punctuation=args.mask_punctuation)
-    
+    colbert = ColBERT.from_pretrained(
+        "xlm-roberta-large",
+        query_maxlen=args.query_maxlen,
+        doc_maxlen=args.doc_maxlen,
+        dim=args.dim,
+        similarity_metric=args.similarity,
+        mask_punctuation=args.mask_punctuation,
+    )
+
     colbert.roberta.resize_token_embeddings(len(colbert.tokenizer))
 
     colbert = colbert.to(DEVICE)

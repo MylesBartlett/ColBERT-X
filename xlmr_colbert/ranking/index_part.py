@@ -1,19 +1,16 @@
-import os
 import torch
-import ujson
 
-from math import ceil
-from itertools import accumulate
-from xlmr_colbert.utils.utils import print_message, dotdict, flatten
-
-from xlmr_colbert.indexing.loaders import get_parts, load_doclens
 from xlmr_colbert.indexing.index_manager import load_index_part
+from xlmr_colbert.indexing.loaders import get_parts, load_doclens
 from xlmr_colbert.ranking.index_ranker import IndexRanker
+from xlmr_colbert.utils.utils import flatten, print_message
 
 
-class IndexPart():
+class IndexPart:
     def __init__(self, directory, dim=128, part_range=None, verbose=True):
-        first_part, last_part = (0, None) if part_range is None else (part_range.start, part_range.stop)
+        first_part, last_part = (
+            (0, None) if part_range is None else (part_range.start, part_range.stop)
+        )
 
         # Load parts metadata
         all_parts, all_parts_paths, _ = get_parts(directory)
@@ -74,7 +71,9 @@ class IndexPart():
         Higher overhead, much faster for large batches.
         """
 
-        assert ((pids >= self.pids_range.start) & (pids < self.pids_range.stop)).sum() == pids.size(0)
+        assert ((pids >= self.pids_range.start) & (pids < self.pids_range.stop)).sum() == pids.size(
+            0
+        )
 
         pids_ = pids - self.doc_offset
         scores = self.ranker.batch_rank(all_query_embeddings, query_indexes, pids_, sorted_pids)

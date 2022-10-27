@@ -1,20 +1,26 @@
+from functools import partial
 import os
+
 import ujson
 
-from functools import partial
-from xlmr_colbert.utils.utils import print_message
-from xlmr_colbert.modeling.tokenization import QueryTokenizer, DocTokenizer, tensorize_triples
-
+from xlmr_colbert.modeling.tokenization import (
+    DocTokenizer,
+    QueryTokenizer,
+    tensorize_triples,
+)
 from xlmr_colbert.utils.runs import Run
+from xlmr_colbert.utils.utils import print_message
 
 
-class LazyBatcher():
+class LazyBatcher:
     def __init__(self, args, rank=0, nranks=1):
         self.bsize, self.accumsteps = args.bsize, args.accumsteps
 
         self.query_tokenizer = QueryTokenizer(args.query_maxlen)
         self.doc_tokenizer = DocTokenizer(args.doc_maxlen)
-        self.tensorize_triples = partial(tensorize_triples, self.query_tokenizer, self.doc_tokenizer)
+        self.tensorize_triples = partial(
+            tensorize_triples, self.query_tokenizer, self.doc_tokenizer
+        )
         self.position = 0
 
         self.triples = self._load_triples(args.triples, rank, nranks)
@@ -47,7 +53,7 @@ class LazyBatcher():
 
         with open(path) as f:
             for line in f:
-                qid, query = line.strip().split('\t')
+                qid, query = line.strip().split("\t")
                 qid = int(qid)
                 queries[qid] = query
 
@@ -60,10 +66,10 @@ class LazyBatcher():
 
         with open(path) as f:
             for line_idx, line in enumerate(f):
-                pid, passage, title, *_ = line.strip().split('\t')
-                assert pid == 'id' or int(pid) == line_idx
+                pid, passage, title, *_ = line.strip().split("\t")
+                assert pid == "id" or int(pid) == line_idx
 
-                passage = title + ' | ' + passage
+                passage = title + " | " + passage
                 collection.append(passage)
 
         return collection
@@ -99,5 +105,7 @@ class LazyBatcher():
         return self.tensorize_triples(queries, positives, negatives, self.bsize // self.accumsteps)
 
     def skip_to_batch(self, batch_idx, intended_batch_size):
-        Run.warn(f'Skipping to batch #{batch_idx} (with intended_batch_size = {intended_batch_size}) for training.')
+        Run.warn(
+            f"Skipping to batch #{batch_idx} (with intended_batch_size = {intended_batch_size}) for training."
+        )
         self.position = intended_batch_size * batch_idx

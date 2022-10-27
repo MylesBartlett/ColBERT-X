@@ -1,25 +1,27 @@
 import os
-import ujson
 import random
 
-from xlmr_colbert.utils.runs import Run
-from xlmr_colbert.utils.parser import Arguments
-import xlmr_colbert.utils.distributed as distributed
+import ujson
 
-from xlmr_colbert.utils.utils import print_message, create_directory
 from xlmr_colbert.indexing.encoder import CollectionEncoder
+import xlmr_colbert.utils.distributed as distributed
+from xlmr_colbert.utils.parser import Arguments
+from xlmr_colbert.utils.runs import Run
+from xlmr_colbert.utils.utils import create_directory, print_message
 
 
 def main():
     random.seed(12345)
 
-    parser = Arguments(description='Precomputing document representations with ColBERT.')
+    parser = Arguments(description="Precomputing document representations with ColBERT.")
 
     parser.add_model_parameters()
     parser.add_model_inference_parameters()
     parser.add_indexing_input()
 
-    parser.add_argument('--chunksize', dest='chunksize', default=6.0, required=False, type=float)   # in GiBs
+    parser.add_argument(
+        "--chunksize", dest="chunksize", default=6.0, required=False, type=float
+    )  # in GiBs
 
     args = parser.parse()
 
@@ -43,11 +45,11 @@ def main():
 
         # Save metadata.
         if args.rank < 1:
-            metadata_path = os.path.join(args.index_path, 'metadata.json')
+            metadata_path = os.path.join(args.index_path, "metadata.json")
             print_message("Saving (the following) metadata to", metadata_path, "..")
             print(args.input_arguments)
 
-            with open(metadata_path, 'w') as output_metadata:
+            with open(metadata_path, "w") as output_metadata:
                 ujson.dump(args.input_arguments.__dict__, output_metadata)
 
         distributed.barrier(args.rank)

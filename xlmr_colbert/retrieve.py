@@ -1,38 +1,37 @@
 import os
 import random
 
-from xlmr_colbert.utils.parser import Arguments
-from xlmr_colbert.utils.runs import Run
-
 from xlmr_colbert.evaluation.loaders import load_colbert, load_qrels, load_queries
 from xlmr_colbert.indexing.faiss import get_faiss_index_name
-from xlmr_colbert.ranking.retrieval import retrieve
 from xlmr_colbert.ranking.batch_retrieval import batch_retrieve
+from xlmr_colbert.ranking.retrieval import retrieve
+from xlmr_colbert.utils.parser import Arguments
+from xlmr_colbert.utils.runs import Run
 
 
 def main():
     random.seed(12345)
 
-    parser = Arguments(description='End-to-end retrieval and ranking with ColBERT.')
+    parser = Arguments(description="End-to-end retrieval and ranking with ColBERT.")
 
     parser.add_model_parameters()
     parser.add_model_inference_parameters()
     parser.add_ranking_input()
     parser.add_retrieval_input()
 
-    parser.add_argument('--faiss_name', dest='faiss_name', default=None, type=str)
-    parser.add_argument('--faiss_depth', dest='faiss_depth', default=1024, type=int)
-    parser.add_argument('--part-range', dest='part_range', default=None, type=str)
-    parser.add_argument('--batch', dest='batch', default=False, action='store_true')
-    parser.add_argument('--depth', dest='depth', default=1000, type=int)
-    parser.add_argument('--log_scores', dest='log_scores', default=False, action='store_true')
-    
+    parser.add_argument("--faiss_name", dest="faiss_name", default=None, type=str)
+    parser.add_argument("--faiss_depth", dest="faiss_depth", default=1024, type=int)
+    parser.add_argument("--part-range", dest="part_range", default=None, type=str)
+    parser.add_argument("--batch", dest="batch", default=False, action="store_true")
+    parser.add_argument("--depth", dest="depth", default=1000, type=int)
+    parser.add_argument("--log_scores", dest="log_scores", default=False, action="store_true")
+
     args = parser.parse()
 
     args.depth = args.depth if args.depth > 0 else None
 
     if args.part_range:
-        part_offset, part_endpos = map(int, args.part_range.split('..'))
+        part_offset, part_endpos = map(int, args.part_range.split(".."))
         args.part_range = range(part_offset, part_endpos)
 
     with Run.context():

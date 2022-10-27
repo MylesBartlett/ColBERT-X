@@ -1,16 +1,8 @@
-import os
-import time
-import faiss
-import random
-import torch
-
-from xlmr_colbert.utils.runs import Run
-from multiprocessing import Pool
-from xlmr_colbert.modeling.inference import ModelInference
 from xlmr_colbert.evaluation.ranking_logger import RankingLogger
-
-from xlmr_colbert.utils.utils import print_message, batch
+from xlmr_colbert.modeling.inference import ModelInference
 from xlmr_colbert.ranking.faiss_index import FaissIndex
+from xlmr_colbert.utils.runs import Run
+from xlmr_colbert.utils.utils import batch, print_message
 
 
 def batch_retrieve(args):
@@ -21,7 +13,7 @@ def batch_retrieve(args):
 
     ranking_logger = RankingLogger(Run.path, qrels=None)
 
-    with ranking_logger.context('unordered.tsv', also_save_annotations=False) as rlogger:
+    with ranking_logger.context("unordered.tsv", also_save_annotations=False) as rlogger:
         queries = args.queries
         qids_in_order = list(queries.keys())
 
@@ -44,7 +36,7 @@ def batch_retrieve(args):
                 ranking = [(None, pid, None) for pid in ranking]
                 rlogger.log(qid, ranking, is_ranked=False)
 
-    print('\n\n')
+    print("\n\n")
     print(ranking_logger.filename)
     print("#> Done.")
-    print('\n\n')
+    print("\n\n")

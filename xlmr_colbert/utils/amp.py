@@ -1,12 +1,13 @@
+from contextlib import contextmanager
+
 import torch
 
-from contextlib import contextmanager
 from xlmr_colbert.utils.utils import NullContextManager
 
-PyTorch_over_1_6 = float('.'.join(torch.__version__.split('.')[0:2])) >= 1.6
+PyTorch_over_1_6 = float(".".join(torch.__version__.split(".")[0:2])) >= 1.6
 
 
-class MixedPrecisionManager():
+class MixedPrecisionManager:
     def __init__(self, activated):
         assert (not activated) or PyTorch_over_1_6, "Cannot use AMP for PyTorch version < 1.6"
 
