@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import torch
 import torch.nn as nn
 from transformers import (
     RobertaPreTrainedModel,
@@ -5,8 +8,6 @@ from transformers import (
     XLMRobertaModel,
     XLMRobertaTokenizer,
 )
-
-from xlmr_colbert.parameters import DEVICE
 
 
 class ColBERT(RobertaPreTrainedModel):
@@ -48,18 +49,18 @@ class ColBERT(RobertaPreTrainedModel):
         return self.score(self.query(*Q), self.doc(*D))
 
     def query(self, input_ids, attention_mask):
-        input_ids, attention_mask = input_ids.to(DEVICE), attention_mask.to(DEVICE)
+        input_ids, attention_mask = input_ids.to(self.device), attention_mask.to(self.device)
         Q = self.roberta(input_ids, attention_mask=attention_mask)[0]
         Q = self.linear(Q)
 
         return torch.nn.functional.normalize(Q, p=2, dim=2)
 
     def doc(self, input_ids, attention_mask, keep_dims=True):
-        input_ids, attention_mask = input_ids.to(DEVICE), attention_mask.to(DEVICE)
+        input_ids, attention_mask = input_ids.to(self.device), attention_mask.to(self.device)
         D = self.roberta(input_ids, attention_mask=attention_mask)[0]
         D = self.linear(D)
 
-        mask = torch.tensor(self.mask(input_ids), device=DEVICE).unsqueeze(2).float()
+        mask = torch.tensor(self.mask(input_ids), device=self.device).unsqueeze(2).float()
         D = D * mask
 
         D = torch.nn.functional.normalize(D, p=2, dim=2)

@@ -1,5 +1,11 @@
 import torch
 
+__all__ = [
+    "sort_by_length",
+    "split_into_batches",
+    "tensorize_triples",
+]
+
 
 def tensorize_triples(query_tokenizer, doc_tokenizer, queries, positives, negatives, bsize):
     assert len(queries) == len(positives) == len(negatives)
@@ -20,9 +26,9 @@ def tensorize_triples(query_tokenizer, doc_tokenizer, queries, positives, negati
 
     (positive_ids, negative_ids), (positive_mask, negative_mask) = D_ids, D_mask
 
-    query_batches = _split_into_batches(Q_ids, Q_mask, bsize)
-    positive_batches = _split_into_batches(positive_ids, positive_mask, bsize)
-    negative_batches = _split_into_batches(negative_ids, negative_mask, bsize)
+    query_batches = split_into_batches(Q_ids, Q_mask, bsize)
+    positive_batches = split_into_batches(positive_ids, positive_mask, bsize)
+    negative_batches = split_into_batches(negative_ids, negative_mask, bsize)
 
     batches = []
     for (q_ids, q_mask), (p_ids, p_mask), (n_ids, n_mask) in zip(
@@ -35,7 +41,7 @@ def tensorize_triples(query_tokenizer, doc_tokenizer, queries, positives, negati
     return batches
 
 
-def _sort_by_length(ids, mask, bsize):
+def sort_by_length(ids, mask, bsize):
     if ids.size(0) <= bsize:
         return ids, mask, torch.arange(ids.size(0))
 
@@ -45,7 +51,7 @@ def _sort_by_length(ids, mask, bsize):
     return ids[indices], mask[indices], reverse_indices
 
 
-def _split_into_batches(ids, mask, bsize):
+def split_into_batches(ids, mask, bsize):
     batches = []
     for offset in range(0, ids.size(0), bsize):
         batches.append((ids[offset : offset + bsize], mask[offset : offset + bsize]))

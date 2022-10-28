@@ -3,6 +3,7 @@ import copy
 import os
 
 import faiss
+import torch.distributed
 
 import xlmr_colbert.utils.distributed as distributed
 from xlmr_colbert.utils.runs import Run
@@ -18,7 +19,7 @@ class Arguments:
         self.add_argument("--experiment", dest="experiment", default="dirty")
         self.add_argument("--run", dest="run", default=Run.name)
 
-        self.add_argument("--local_rank", dest="rank", default=-1, type=int)
+        # self.add_argument("--local_rank", dest="rank", default=-1, type=int)
 
     def add_model_parameters(self):
         # Core Arguments
@@ -103,11 +104,12 @@ class Arguments:
 
     def parse(self):
         args = self.parser.parse_args()
+
         self.check_arguments(args)
 
         args.input_arguments = copy.deepcopy(args)
 
-        args.nranks, args.distributed = distributed.init(args.rank)
+        args.nranks, args.distributed, args.rank, args.device_id = distributed.init()
 
         args.nthreads = int(max(os.cpu_count(), faiss.omp_get_max_threads()) * 0.8)
         args.nthreads = max(1, args.nthreads // args.nranks)

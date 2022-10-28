@@ -1,15 +1,17 @@
+from __future__ import annotations
 from collections import OrderedDict, defaultdict
 import datetime
 import itertools
 import os
+from typing import TypeVar
 
 import torch
 import tqdm
 
 
-def print_message(*s, condition=True):
-    s = " ".join([str(x) for x in s])
-    msg = "[{}] {}".format(datetime.datetime.now().strftime("%b %d, %H:%M:%S"), s)
+def print_message(*s: str, condition: bool = True) -> str:
+    joined = " ".join([str(x) for x in s])
+    msg = "[{}] {}".format(datetime.datetime.now().strftime("%b %d, %H:%M:%S"), joined)
 
     if condition:
         print(msg, flush=True)
@@ -17,7 +19,7 @@ def print_message(*s, condition=True):
     return msg
 
 
-def timestamp():
+def timestamp() -> str:
     format_str = "%Y-%m-%d_%H.%M.%S"
     result = datetime.datetime.now().strftime(format_str)
     return result
@@ -131,7 +133,10 @@ class dotdict(dict):
     __delattr__ = dict.__delitem__
 
 
-def flatten(L):
+T = TypeVar("T")
+
+
+def flatten(L: list[list[T]]) -> list[T]:
     return [x for y in L for x in y]
 
 

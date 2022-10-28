@@ -33,19 +33,17 @@ class _RunManager:
         self.name = name
         self.path = os.path.join(self.experiments_root, self.experiment, self.script, self.name)
 
-        if rank < 1:
-            if os.path.exists(self.path):
-                print("\n\n")
-                print_message("It seems that ", self.path, " already exists.")
-                print_message("Do you want to overwrite it? \t yes/no \n")
+        if rank == 0:  # main process
+            # if os.path.exists(self.path):
+            #     print("\n\n")
+            #     print_message("It seems that ", self.path, " already exists.")
+            #     print_message("Do you want to overwrite it? \t yes/no \n")
 
-                # TODO: This should timeout and exit (i.e., fail) given no response for 60 seconds.
-
-                response = input()
-                if response.strip() != "yes":
-                    assert not os.path.exists(self.path), self.path
-            else:
-                create_directory(self.path)
+            #     response = input()
+            #     if response.strip() != "yes":
+            #         assert not os.path.exists(self.path), self.path
+            # else:
+            create_directory(self.path)
 
         distributed.barrier(rank)
 

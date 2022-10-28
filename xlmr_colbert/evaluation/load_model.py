@@ -6,7 +6,6 @@ import torch
 import ujson
 
 from xlmr_colbert.modeling.colbert import ColBERT
-from xlmr_colbert.parameters import DEVICE
 from xlmr_colbert.utils.utils import load_checkpoint, print_message
 
 

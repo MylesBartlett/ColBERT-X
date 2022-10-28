@@ -9,7 +9,6 @@ from xlmr_colbert.modeling.tokenization import (
     tensorize_triples,
 )
 from xlmr_colbert.utils.runs import Run
-from xlmr_colbert.utils.utils import print_message
 
 
 class EagerBatcher:

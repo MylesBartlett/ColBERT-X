@@ -5,16 +5,19 @@ import time
 import numpy as np
 import torch
 import torch.nn as nn
-from transformers import AdamW
+from torch.optim import AdamW
 
 from xlmr_colbert.modeling.colbert import ColBERT
-from xlmr_colbert.parameters import DEVICE
 from xlmr_colbert.training.eager_batcher import EagerBatcher
 from xlmr_colbert.training.lazy_batcher import LazyBatcher
 from xlmr_colbert.training.utils import manage_checkpoints, print_progress
 from xlmr_colbert.utils.amp import MixedPrecisionManager
 from xlmr_colbert.utils.runs import Run
 from xlmr_colbert.utils.utils import print_message
+
+
+def is_main_process(rank: int) -> bool:
+    return rank == 0
 
 
 def train(args):
@@ -34,9 +37,17 @@ def train(args):
         )
 
     if args.lazy:
-        reader = LazyBatcher(args, (0 if args.rank == -1 else args.rank), args.nranks)
+        reader = LazyBatcher(
+            args,
+            rank=(0 if args.rank == -1 else args.rank),
+            nranks=args.nranks,
+        )
     else:
-        reader = EagerBatcher(args, (0 if args.rank == -1 else args.rank), args.nranks)
+        reader = EagerBatcher(
+            args,
+            rank=(0 if args.rank == -1 else args.rank),
+            nranks=args.nranks,
+        )
 
     if args.rank not in [-1, 0]:
         torch.distributed.barrier()
@@ -67,15 +78,15 @@ def train(args):
             print_message("[WARNING] Loading checkpoint with strict=False")
             colbert.load_state_dict(checkpoint["model_state_dict"], strict=False)
 
-    if args.rank == 0:
+    if is_main_process(args.rank):
         torch.distributed.barrier()
 
-    colbert = colbert.to(DEVICE)
+    colbert = colbert.to(args.device_id)
     colbert.train()
 
     if args.distributed:
         colbert = torch.nn.parallel.DistributedDataParallel(
-            colbert, device_ids=[args.rank], output_device=args.rank, find_unused_parameters=True
+            colbert, device_ids=[args.device_id], find_unused_parameters=True
         )
 
     # Attempt to load optimizer
@@ -88,7 +99,7 @@ def train(args):
 
     amp = MixedPrecisionManager(args.amp)
     criterion = nn.CrossEntropyLoss()
-    labels = torch.zeros(args.bsize, dtype=torch.long, device=DEVICE)
+    labels = torch.zeros(args.bsize, dtype=torch.long, device=args.device_id)
 
     start_time = time.time()
     train_loss = 0.0
@@ -110,7 +121,7 @@ def train(args):
                 loss = criterion(scores, labels[: scores.size(0)])
                 loss = loss / args.accumsteps
 
-            if args.rank < 1:
+            if is_main_process(args.rank):
                 print_progress(scores)
 
             amp.backward(loss)
@@ -120,13 +131,13 @@ def train(args):
 
         amp.step(colbert, optimizer)
 
-        if args.rank < 1:
+        if is_main_process(args.rank):
             avg_loss = train_loss / (batch_idx + 1)
 
             num_examples_seen = (batch_idx - start_batch_idx) * args.bsize * args.nranks
             elapsed = float(time.time() - start_time)
 
-            log_to_mlflow = batch_idx % 20 == 0
+            log_to_mlflow = (batch_idx % 20) == 0
             Run.log_metric("train/avg_loss", avg_loss, step=batch_idx, log_to_mlflow=log_to_mlflow)
             Run.log_metric(
                 "train/batch_loss", this_batch_loss, step=batch_idx, log_to_mlflow=log_to_mlflow

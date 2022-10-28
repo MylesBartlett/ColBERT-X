@@ -1,5 +1,9 @@
 from transformers import XLMRobertaTokenizer
 
+from .utils import split_into_batches
+
+__all__ = ["DocTokenizer"]
+
 
 class DocTokenizer:
     def __init__(self, doc_maxlen):
@@ -61,7 +65,7 @@ class DocTokenizer:
 
         if bsize:
             ids, mask, reverse_indices = _sort_by_length(ids, mask, bsize)
-            batches = _split_into_batches(ids, mask, bsize)
+            batches = split_into_batches(ids, mask, bsize)
             return batches, reverse_indices
 
         return ids, mask
